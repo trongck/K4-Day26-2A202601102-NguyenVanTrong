@@ -238,6 +238,8 @@ Chi tiết + code cho cả 3 phần: xem [`03-production/README.md`](03-producti
 [`personal-task-mcp/`](personal-task-mcp/) là MCP Server quản lý công việc cá
 nhân bằng SQLite, gồm stdio, Streamable HTTP có Bearer Token, versioning,
 `server://info`, client v1 và client mới có fallback. Bài cũng có hai project
-`mcp-server` / `mcp-client` cùng giao diện Google ADK Web giống Lab 04.
+`mcp-server` / `mcp-client` cùng giao diện Google ADK Web giống Lab 04. ADK đã
+được kiểm thử với câu hỏi tự nhiên và gọi MCP tools thành công; Claude Code
+chưa được kiểm thử trong môi trường hiện tại.
 
 Hướng dẫn đầy đủ: [`personal-task-mcp/README.md`](personal-task-mcp/README.md)

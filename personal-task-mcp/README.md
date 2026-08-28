@@ -315,7 +315,7 @@ cần revoke/rotate secret; chỉ xóa khỏi commit mới là chưa đủ.
 Quy ước:
 
 - `[x]`: đã được kiểm tra bằng script/client trong repository.
-- `[~]`: đã cấu hình nhưng cần xác nhận thủ công trong Claude Code hoặc môi trường ngoài.
+- `[~]`: chưa kiểm tra đúng client được rubric chỉ định, hoặc là phần tùy chọn.
 - `[ ]`: chưa thực hiện.
 
 ### Bài Dễ
@@ -324,15 +324,17 @@ Quy ước:
 - [x] Có hai tool nghiệp vụ v1 tự xây: `save_task`, `search_tasks`.
 - [x] Tool giải quyết việc tạo, cập nhật, tìm và theo dõi công việc cá nhân.
 - [x] Tool đọc/ghi SQLite thật, không trả dữ liệu hard-code vô nghĩa.
-- [~] Claude Code nhận ra MCP Server: đã có `.mcp.json`; cần mở Claude Code,
-  chấp nhận project server và kiểm tra bằng `/mcp`.
-- [~] Claude Code nhìn thấy và gọi được tools: MCP SDK và Google ADK đã khám
-  phá/gọi được; vẫn cần một lượt xác nhận trực tiếp trong Claude Code.
+- [x] Google ADK nhận ra MCP Server qua Streamable HTTP.
+- [x] Google ADK nhìn thấy `save_task`, `save_task_v2`, `search_tasks` và gọi
+  được tools từ giao diện Web.
+- [~] Claude Code chưa được kiểm thử vì môi trường hiện tại không có Claude
+  Code. Repository vẫn có `.mcp.json` và hướng dẫn đăng ký nếu rubric bắt buộc
+  đúng client này.
 - [x] Tool nhận đúng arguments; test bao phủ title, task ID, status, due date,
   priority, tags và các input không hợp lệ.
 - [x] Tool trả dữ liệu đúng và dữ liệu tồn tại trong SQLite sau khi server dừng.
-- [~] Câu hỏi tự nhiên: giao diện ADK Web đã sẵn sàng; cần lưu bằng chứng một
-  câu hỏi tự nhiên trong Claude Code theo yêu cầu giảng viên.
+- [x] Đã kiểm thử bằng câu hỏi tự nhiên trên ADK Web; agent tự quyết định chọn
+  tool và tool hoạt động bình thường, không yêu cầu người dùng gọi tên tool.
 
 Câu kiểm tra tự nhiên đề xuất:
 
@@ -421,6 +423,11 @@ ADK nhìn thấy tools: save_task, save_task_v2, search_tasks
 ADK MCP connection: PASS
 ```
 
+Đã kiểm thử thêm trên giao diện `http://localhost:8000`: người dùng nhập yêu
+cầu bằng ngôn ngữ tự nhiên, ADK tự chọn MCP tool, truyền arguments và trả kết
+quả từ SQLite thành công. Đây là MCP Client được dùng để thay thế Claude Code
+trong môi trường hiện tại.
+
 ## 13. Checklist trước khi nộp
 
 - [x] Có source code MCP Server tự xây.
@@ -433,7 +440,9 @@ ADK MCP connection: PASS
 - [x] Có hướng dẫn test token đúng, sai và thiếu.
 - [x] Có versioning, client cũ, client mới, fallback và `server://info`.
 - [x] `.env`, database và private key được ignore.
-- [~] Chạy câu hỏi tự nhiên trong Claude Code và lưu bằng chứng theo yêu cầu lớp.
+- [x] Đã chạy câu hỏi tự nhiên bằng Google ADK Web và tool hoạt động bình thường.
+- [~] Nếu giảng viên bắt buộc đúng Claude Code, cần xin chấp nhận Google ADK
+  thay thế hoặc kiểm thử bổ sung trên máy có Claude Code.
 - [ ] Push commit cuối lên GitHub cá nhân và nộp link repository.
 
 Không đưa API key, access token, password, private key, secret hoặc `.env` thật
