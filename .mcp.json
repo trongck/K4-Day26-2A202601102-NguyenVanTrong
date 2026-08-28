@@ -2,9 +2,13 @@
   "mcpServers": {
     "personal-task-manager": {
       "type": "stdio",
-      "command": "D:\\Thuc_chien_AI\\K4-Day26-2A202601102-NguyenVanTrong\\.venv\\Scripts\\python.exe",
+      "command": "uv",
       "args": [
-        "D:\\Thuc_chien_AI\\K4-Day26-2A202601102-NguyenVanTrong\\personal-task-mcp\\server.py"
+        "run",
+        "--project",
+        "personal-task-mcp/mcp-server",
+        "python",
+        "personal-task-mcp/server.py"
       ],
       "env": {
         "PYTHONUTF8": "1"

@@ -124,13 +124,13 @@ server của project khi được hỏi, rồi kiểm tra:
 /mcp
 ```
 
-Nếu chuyển repository sang máy hoặc đường dẫn khác, cập nhật `command` và
-`args` trong `.mcp.json`, hoặc đăng ký lại bằng Claude Code CLI:
+`.mcp.json` dùng `uv` và đường dẫn tương đối, vì vậy không chứa đường dẫn riêng
+của máy tác giả. Máy chạy cần cài `uv`. Có thể đăng ký lại bằng Claude Code CLI:
 
 ```powershell
-claude mcp add personal-task-manager --scope project -- `
-  "D:\duong-dan-repo\.venv\Scripts\python.exe" `
-  "D:\duong-dan-repo\personal-task-mcp\server.py"
+claude mcp add personal-task-manager --scope project -- uv run `
+  --project personal-task-mcp/mcp-server `
+  python personal-task-mcp/server.py
 ```
 
 Các câu hỏi tự nhiên để thử agent tự chọn tool:
@@ -309,3 +309,132 @@ cần revoke/rotate secret; chỉ xóa khỏi commit mới là chưa đủ.
 - Token đúng vẫn bị từ chối: header phải là `Authorization: Bearer <TOKEN>`.
 - Token nào cũng gọi được: kiểm tra `TokenVerifier` thực sự được truyền vào
   server; `auth_test_client.py` phải từ chối missing/invalid.
+
+## 11. Đối chiếu yêu cầu bài làm
+
+Quy ước:
+
+- `[x]`: đã được kiểm tra bằng script/client trong repository.
+- `[~]`: đã cấu hình nhưng cần xác nhận thủ công trong Claude Code hoặc môi trường ngoài.
+- `[ ]`: chưa thực hiện.
+
+### Bài Dễ
+
+- [x] MCP Server khởi động được qua stdio.
+- [x] Có hai tool nghiệp vụ v1 tự xây: `save_task`, `search_tasks`.
+- [x] Tool giải quyết việc tạo, cập nhật, tìm và theo dõi công việc cá nhân.
+- [x] Tool đọc/ghi SQLite thật, không trả dữ liệu hard-code vô nghĩa.
+- [~] Claude Code nhận ra MCP Server: đã có `.mcp.json`; cần mở Claude Code,
+  chấp nhận project server và kiểm tra bằng `/mcp`.
+- [~] Claude Code nhìn thấy và gọi được tools: MCP SDK và Google ADK đã khám
+  phá/gọi được; vẫn cần một lượt xác nhận trực tiếp trong Claude Code.
+- [x] Tool nhận đúng arguments; test bao phủ title, task ID, status, due date,
+  priority, tags và các input không hợp lệ.
+- [x] Tool trả dữ liệu đúng và dữ liệu tồn tại trong SQLite sau khi server dừng.
+- [~] Câu hỏi tự nhiên: giao diện ADK Web đã sẵn sàng; cần lưu bằng chứng một
+  câu hỏi tự nhiên trong Claude Code theo yêu cầu giảng viên.
+
+Câu kiểm tra tự nhiên đề xuất:
+
+```text
+Tạo công việc hoàn thành báo cáo MCP, hạn ngày 5 tháng 9 năm 2026,
+ưu tiên cao và gắn nhãn Day26.
+
+Tìm tối đa 5 công việc chưa hoàn thành có chứa từ MCP.
+```
+
+### Bài Trung bình
+
+- [x] Server chạy bằng Streamable HTTP, bind `0.0.0.0`.
+- [x] MCP client và Google ADK kết nối được qua HTTP.
+- [x] Authentication được bật bằng `TokenVerifier`.
+- [x] Token hợp lệ gọi được tool.
+- [x] Thiếu token bị từ chối bằng HTTP 401.
+- [x] Token sai bị từ chối bằng HTTP 401.
+- [ ] Truy cập từ máy khác trong LAN chưa được thực hiện; đây là phần tùy điều kiện.
+
+### Bài Khó
+
+- [x] Có thay đổi thật: `save_task_v2` thêm `priority`, `tags` và response chi tiết.
+- [x] Client cũ vẫn gọi `save_task` v1 trên server v2.
+- [x] Client mới dùng được `save_task_v2`.
+- [x] Có resource `server://info`.
+- [x] `server://info` chứa version, tool metadata và capabilities.
+- [x] Client mới đọc metadata trước khi chọn tool.
+- [x] Client mới fallback về `save_task` khi kết nối server v1.
+
+## 12. Bằng chứng kiểm tra có thể tái hiện
+
+### Database, stdio, client cũ và input/output
+
+```powershell
+python -m unittest discover -s personal-task-mcp\tests -v
+python personal-task-mcp\client.py
+```
+
+Kết quả đã xác minh: 4/4 tests đạt; server công bố đủ tools; client tạo task,
+chuyển trạng thái sang `in_progress` và tìm lại đúng bản ghi vừa lưu.
+
+### Versioning và fallback
+
+```powershell
+python personal-task-mcp\versioned_client.py
+python personal-task-mcp\versioned_client.py --legacy
+```
+
+Kết quả đã xác minh:
+
+```text
+server v2 -> chọn save_task_v2
+server v1 -> fallback save_task
+```
+
+### HTTP và Authentication
+
+Khi HTTP server đang chạy, thực hiện:
+
+```powershell
+python personal-task-mcp\auth_test_client.py
+python personal-task-mcp\http_client.py
+```
+
+Kết quả đã xác minh:
+
+```text
+Token đúng: ALLOWED
+Thiếu token: HTTP 401
+Token sai: HTTP 401
+Authentication test passed
+```
+
+### Google ADK MCP Client
+
+```powershell
+cd personal-task-mcp\mcp-client
+uv run python verify_connection.py
+```
+
+Kết quả đã xác minh:
+
+```text
+ADK nhìn thấy tools: save_task, save_task_v2, search_tasks
+ADK MCP connection: PASS
+```
+
+## 13. Checklist trước khi nộp
+
+- [x] Có source code MCP Server tự xây.
+- [x] Có ít nhất hai MCP tools nghiệp vụ.
+- [x] README mô tả use case và input/output của tools.
+- [x] README hướng dẫn cài đặt, chạy stdio, HTTP và ADK Web.
+- [x] Có hướng dẫn đăng ký và kiểm tra trong Claude Code.
+- [x] Có script/test làm bằng chứng tool hoạt động.
+- [x] Có Streamable HTTP và Bearer Token authentication.
+- [x] Có hướng dẫn test token đúng, sai và thiếu.
+- [x] Có versioning, client cũ, client mới, fallback và `server://info`.
+- [x] `.env`, database và private key được ignore.
+- [~] Chạy câu hỏi tự nhiên trong Claude Code và lưu bằng chứng theo yêu cầu lớp.
+- [ ] Push commit cuối lên GitHub cá nhân và nộp link repository.
+
+Không đưa API key, access token, password, private key, secret hoặc `.env` thật
+lên repository. Chỉ các file `.env.example` chứa placeholder được phép commit.
