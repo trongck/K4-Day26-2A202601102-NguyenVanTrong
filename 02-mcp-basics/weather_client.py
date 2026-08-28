@@ -14,15 +14,20 @@ Cách chạy (cùng thư mục với weather_server.py, client tự khởi độ
 """
 
 import asyncio
+from pathlib import Path
 import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 
 async def main() -> None:
-    # Dùng đúng interpreter đang chạy client (tránh lỗi "python" không tồn tại)
-    params = StdioServerParameters(command=sys.executable, args=["weather_server.py"])
+    # Dùng đúng interpreter đang chạy client và đường dẫn tuyệt đối tới server script
+    server_path = str(Path(__file__).parent / "weather_server.py")
+    params = StdioServerParameters(command=sys.executable, args=[server_path])
 
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as session:
@@ -36,9 +41,11 @@ async def main() -> None:
 
             # 2. Gọi tool — SERVER thực thi rồi trả kết quả về qua MCP
             for city in ["Hanoi", "Danang", "Haiphong"]:
-                result = await session.call_tool("get_weather", {"city": city})
-                print(f"\ncall_tool get_weather(city={city!r}):")
-                print("  ->", result.content[0].text)
+                r_weather = await session.call_tool("get_weather", {"city": city})
+                r_aqi = await session.call_tool("get_air_quality", {"city": city})
+                print(f"\n--- {city} ---")
+                print("  Thời tiết :", r_weather.content[0].text)
+                print("  Không khí :", r_aqi.content[0].text)
 
 
 if __name__ == "__main__":

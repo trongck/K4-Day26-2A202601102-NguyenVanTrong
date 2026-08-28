@@ -230,3 +230,14 @@ Chi tiết + code cho cả 3 phần: xem [`03-production/README.md`](03-producti
 ---
 
 **Tóm lại:** Function Calling là *cơ chế model gọi công cụ*; MCP là *chuẩn để kết nối model với các công cụ đó* — và MCP thực chất dùng Function Calling làm nền tảng để hoạt động.
+
+---
+
+## Bài thực hành cá nhân — Quản lý công việc
+
+[`personal-task-mcp/`](personal-task-mcp/) là MCP Server quản lý công việc cá
+nhân bằng SQLite, gồm stdio, Streamable HTTP có Bearer Token, versioning,
+`server://info`, client v1 và client mới có fallback. Bài cũng có hai project
+`mcp-server` / `mcp-client` cùng giao diện Google ADK Web giống Lab 04.
+
+Hướng dẫn đầy đủ: [`personal-task-mcp/README.md`](personal-task-mcp/README.md)

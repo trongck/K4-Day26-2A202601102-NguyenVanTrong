@@ -25,11 +25,23 @@ _MOCK_DB = {
     "Danang": "30°C, nhiều mây",
 }
 
+_MOCK_AIR_QUALITY = {
+    "Hanoi": "AQI 155 (Không lành mạnh - PM2.5 cao, khuyến cáo đeo khẩu trang)",
+    "Haiphong": "AQI 85 (Trung bình - chấp nhận được)",
+    "Danang": "AQI 35 (Tốt - không khí trong lành)",
+}
+
 
 @mcp.tool()
 def get_weather(city: str) -> str:
     """Lấy thời tiết hiện tại của một thành phố."""
     return f"{city}: {_MOCK_DB.get(city, '28°C, không có dữ liệu chi tiết')}"
+
+
+@mcp.tool()
+def get_air_quality(city: str) -> str:
+    """Lấy chỉ số chất lượng không khí (AQI) và mức độ ô nhiễm của một thành phố."""
+    return f"{city}: {_MOCK_AIR_QUALITY.get(city, 'AQI 50 (Chất lượng không khí bình thường)')}"
 
 
 if __name__ == "__main__":

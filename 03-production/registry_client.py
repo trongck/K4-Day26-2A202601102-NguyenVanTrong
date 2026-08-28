@@ -34,6 +34,9 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamable_http_client
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 REGISTRY_PATH = Path(__file__).parent / "registry.json"
 
 
@@ -41,7 +44,7 @@ class ToolRegistry:
     """Danh mục trung tâm — agent tra cứu tool theo tag, tên, hoặc mô tả."""
 
     def __init__(self, path: Path = REGISTRY_PATH) -> None:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         self.tools: dict[str, dict] = data["tools"]
         self.servers: dict[str, dict] = data["servers"]
@@ -59,14 +62,15 @@ class ToolRegistry:
             if keyword and keyword.lower() in tool_cfg.get("description", "").lower():
                 match = True
             if match:
-                server_cfg = self.servers.get(tool_cfg["server"], {})
+                server_name = tool_cfg["server"]
+                server_cfg = self.servers.get(server_name, {})
                 results.append({
                     "tool": tool_name,
-                    "description": tool_cfg["description"],
-                    "version": tool_cfg["version"],
+                    "version": tool_cfg.get("version", "1.0.0"),
                     "deprecated": tool_cfg.get("deprecated", False),
-                    "parameters": tool_cfg.get("parameters", {}),
-                    "server_name": tool_cfg["server"],
+                    "description": tool_cfg.get("description", ""),
+                    "tags": tool_cfg.get("tags", []),
+                    "server_name": server_name,
                     "server": server_cfg,
                 })
         return results
@@ -76,6 +80,7 @@ class ToolRegistry:
         results = self.search(tag=tag, keyword=keyword)
         if not results:
             raise KeyError(f"Không tìm thấy tool (tag={tag}, keyword={keyword})")
+        # Ưu tiên tool chưa deprecated
         active = [r for r in results if not r["deprecated"]]
         candidates = active or results
         return max(candidates, key=lambda r: r["version"])
@@ -87,9 +92,14 @@ async def connect_and_call(match: dict, tool_args: dict) -> str:
     tool_name = match["tool"]
 
     if server.get("transport") == "stdio":
+        base_dir = Path(__file__).parent
+        resolved_args = [
+            str((base_dir / arg).resolve()) if (base_dir / arg).exists() else arg
+            for arg in server["args"]
+        ]
         params = StdioServerParameters(
             command=sys.executable,
-            args=server["args"],
+            args=resolved_args,
         )
         async with stdio_client(params) as (read, write):
             async with ClientSession(read, write) as session:

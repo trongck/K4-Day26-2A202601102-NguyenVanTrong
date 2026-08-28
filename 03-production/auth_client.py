@@ -12,6 +12,7 @@ Cách chạy (cần auth_server.py đang chạy ở terminal khác):
 from __future__ import annotations
 
 import asyncio
+import sys
 
 import httpx
 
@@ -20,6 +21,11 @@ from mcp.client.streamable_http import streamable_http_client
 
 SERVER_URL = "http://localhost:8000/mcp"
 TOKEN = "dev-token-abc123"
+
+# PowerShell trên Windows có thể dùng cp1258, không biểu diễn được đầy đủ
+# tiếng Việt trong mô tả tool do server trả về.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 
 async def main() -> None:
